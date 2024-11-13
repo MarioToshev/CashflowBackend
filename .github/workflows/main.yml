@@ -1,0 +1,56 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build
+        run: echo "Hello world..."
+
+  build-orders:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Include orders
+        run: |
+          # Replicate the behavior from orders.gitlab-ci.yml here
+          # You can add steps to build or set up the orders service here
+          echo "Orders build process..."
+
+  test:
+    needs: [build, build-orders]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Run tests
+        run: echo "Running tests..."
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          project_id: cashflow-441010
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > ./key.json
+          gcloud auth activate-service-account --key-file=key.json
+          gcloud config set project cashflow-441010
+          gcloud container clusters get-credentials Cashflow --zone europe-central2 --project cashflow-441010
+      - name: Deploy to GKE
+        run: kubectl apply -f kubernetes.yml
