@@ -1,0 +1,99 @@
+stages:
+  - build-orders
+  - test
+  # - dockerize
+  # - deploy
+
+variables:
+  DOCKER_IMAGE: order-service
+
+build-job-orders-service:
+  stage: build-orders
+  script:
+    - echo "Building orders...";
+    - cd ./orders
+    - go build -v ./...
+    - echo "orders build complete.";
+    - cd ..
+
+test-job-order-service:
+  stage: test
+  script:
+    - cd ./orders/test
+    - go get gotest.tools/gotestsum
+    - $env:PATH += ";$HOME/go/bin"
+    - gotestsum --junitfile report.xml --format testname
+  artifacts:
+    when: always
+    reports:
+      junit: ./orders/test/report.xml
+
+# dockerize:
+#   stage: dockerize
+#   before_script:
+#     - docker info
+#     - echo "$DOCKER_REGISTRY_PASS" | docker login -u "$DOCKER_REGISTRY_USER" --password-stdin
+
+#   image: docker:latest  # Use a Docker image to run Docker commands
+#   services:
+#     - docker:dind  # Enable Docker-in-Docker
+
+#   script:
+#     - cd ./orders  # Navigate to the orders directory
+#     - go build -v ./...  # Build your Go application
+#     - docker build --no-cache -t $DOCKER_IMAGE .  # Build Docker image, use no cache
+#     - docker tag $DOCKER_IMAGE mario90lp/cashflow-microservices:latest  # Tag the image
+#     - docker push mario90lp/cashflow-microservices:latest  # Push the image to Docker Hub
+
+# deploy:
+#   stage: deploy
+#   image: google/cloud-sdk:alpine
+#   when: manual
+#   script:
+#     - cd ./orders
+#     - gcloud auth activate-service-account --$GCP_SERVICE_ACCOUNT_KEY
+#     - gcloud config set project cashflow-441010
+#     - gcloud container clusters get-credentials Cashflow --zone europe-central2 --project cashflow 
+#     - kubectl apply -f kubernetes.yml
+# deploy:
+#   stage: deploy
+#   image: google/cloud-sdk:latest
+#   when: manual
+#   # before_script:
+#   #     - apt-get update && apt-get install -y apt-transport-https ca-certificates gnupg
+#   #     - echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+#   #     - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+#   #     - apt-get update && apt-get install -y google-cloud-sdk
+#   script:
+#     - cd ./orders
+#     - echo $GCP_SERVICE_ACCOUNT_KEY > ./key.json
+#     - gcloud auth activate-service-account --key-file=key.json
+#     - gcloud config set project cashflow-441010
+#     - gcloud container clusters get-credentials Cashflow --zone europe-central2 --project cashflow-441010
+#     - kubectl apply -f kubernetes.yml
+ 
+# deploy:
+#   stage: deploy
+#   when: manual
+#   image: google/cloud-sdk:latest
+#   services:
+#     - docker:dind 
+#   before_script:
+#     - docker pull google/cloud-sdk:latest
+#     - docker run -i google/cloud-sdk:160.0.0 gcloud version
+#     # - docker run -it google/cloud-sdk:latest /bin/bash
+#     # - apt-get update && apt-get install -y kubectl
+#     # - exit
+#   script:
+#     - cd ./orders
+#     - echo $GCP_SERVICE_ACCOUNT_KEY > ./key.json
+#     - docker run -i google/cloud-sdk sh -c "mkdir /orders"
+#     - docker run -i google/cloud-sdk sh -c "pwd && ls"
+#     - docker run -v /c/GitLab-Runner/builds/xzs4zCtSv/0/I476237/cashflow-backend/orders:/orders google/cloud-sdk:latest
+#     - docker run -i google/cloud-sdk sh -c "pwd && ls /orders"
+#     - docker run -i google/cloud-sdk:160.0.0 gcloud auth activate-service-account --key-file=/etc/orders/key.json
+#     - docker run -i google/cloud-sdk:160.0.0 gcloud config set project cashflow-441010
+#     - docker run -i google/cloud-sdk:160.0.0 gcloud container clusters get-credentials Cashflow --zone europe-central2 --project cashflow-441010
+#     - docker run -i google/cloud-sdk:160.0.0 kubectl apply -f kubernetes.yml
+
+

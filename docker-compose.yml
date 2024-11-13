@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  order-service:
+    build:
+      context: ./orde rs
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081" # Host port:Container port
+    environment:
+      - ENV=development
+      - DB_HOST=db
+    depends_on:
+      - db
+
+  db:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=222426
+      - PostgreSQL_DB=Cashflow_Orders
